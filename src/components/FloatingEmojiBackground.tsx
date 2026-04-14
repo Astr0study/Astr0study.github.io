@@ -158,11 +158,17 @@ export function FloatingEmojiBackground({ count = 10 }: { count?: number }) {
         aria-hidden="true"
         style={{
           background:
-            // subtle green glow rising from bottom, high transparency
-            "radial-gradient(1200px 520px at 50% 110%, hsl(var(--accent) / 0.18) 0%, transparent 62%)," +
-            "linear-gradient(to top, hsl(var(--accent) / 0.10) 0%, transparent 55%)",
+            // Softer/longer fades so the gradient doesn't "end" abruptly.
+            "radial-gradient(1400px 720px at 50% 118%, hsl(var(--accent) / 0.18) 0%, hsl(var(--accent) / 0.10) 26%, transparent 82%)," +
+            "radial-gradient(900px 420px at 18% 112%, hsl(var(--accent) / 0.08) 0%, transparent 72%)," +
+            "linear-gradient(to top, hsl(var(--accent) / 0.10) 0%, hsl(var(--accent) / 0.06) 34%, transparent 78%)",
         }}
       />
+      <div
+        className="absolute inset-0 bg-dither-noise opacity-[0.035] mix-blend-overlay"
+        aria-hidden="true"
+      />
+
       {items.map((it) => (
         (() => {
           const c = Math.cos(it.parallaxAngleRad);
