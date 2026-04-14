@@ -2,6 +2,7 @@ import * as React from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { SystemStatusLine } from "@/components/SystemStatusLine";
 
 const YOUTUBE_VIDEO_ID = "qCNhaz6IVp8";
 const PROFILE_IMG_SRC = "/profile.JPEG";
@@ -67,6 +68,21 @@ const Index = () => {
   const handleGalleryImgError: React.ReactEventHandler<HTMLImageElement> = (e) => {
     const img = e.currentTarget;
     if (img.src.endsWith(GALLERY_FALLBACK_SRC)) return;
+
+    // Some browsers may fire "error" for aborted/cancelled lazy-loads.
+    // Retry once with a cache-busting query param before falling back.
+    if (img.dataset.retry !== "1") {
+      img.dataset.retry = "1";
+      try {
+        const url = new URL(img.src);
+        url.searchParams.set("retry", String(Date.now()));
+        img.src = url.toString();
+        return;
+      } catch {
+        // If URL parsing fails, fall back below.
+      }
+    }
+
     img.src = GALLERY_FALLBACK_SRC;
   };
 
@@ -157,7 +173,8 @@ const Index = () => {
     "kdybych se mohl rozdělit na více osobností,\n" +
     "jedna by se věnovala autům a motorkám,\n" +
     "druhá by prozkoumávala technologie a 3D modeling,\n" +
-    `a\u00A0tu\u00A0třetí\u00A0bys\u00A0nenašel,\u00A0protože\u00A0leží\u00A0ve\u00A0spacáku\u00A0někde\u00A0v\u00A0lese`;
+    "a tu třetí bys nenašel, protože leží ve spacáku\n" +
+    "někde v lese\n";
   const [typedIntro, setTypedIntro] = React.useState("");
   const [showIntroCaret, setShowIntroCaret] = React.useState(true);
   const [introTypingDurationMs, setIntroTypingDurationMs] = React.useState<number>(0);
@@ -405,68 +422,83 @@ const Index = () => {
         {/* Skills / Progress */}
         <section className="pb-6 -mx-6 page-reveal" style={{ ["--d" as any]: `${afterIntroDelayMs + 90}ms` }}>
           <div className="max-w-5xl mx-auto px-6">
-            <div className="rounded-xl border border-border/50 bg-card/40 shadow-sm">
-              <div className="px-5 pt-5 pb-3 flex items-center justify-start">
-                <div className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background/40 px-3 py-1.5 shadow-sm">
-                  <span className="text-[11px] font-mono tracking-tight text-muted-foreground/90">
-                    <span className="text-accent">{`//`}</span>
-                    <span className="ml-2">{`skills`}</span>
-                  </span>
-                </div>
-              </div>
-
-              <div className="px-5 pb-5 grid gap-5">
-                {[
-                  {
-                    key: "video",
-                    title: "Video",
-                    desc: "DaVinci Ressolve, Color grading, editing, sound design ...",
-                    value: skillProgress.video,
-                    target: 21,
-                  },
-                  {
-                    key: "modeling",
-                    title: "3D Modeling",
-                    desc: "Fusion 360, parametrické modelování, 3D tisk & prototypování, AI nástroje ...",
-                    value: skillProgress.modeling,
-                    target: 16,
-                  },
-                  {
-                    key: "coding",
-                    title: "Coding",
-                    desc: "Visual Studio, GitHub, Cursor, AI nástroje ...",
-                    value: skillProgress.coding,
-                    target: 13,
-                  },
-                ].map((row) => (
-                  <div key={row.key} className="grid gap-2">
-                    <div className="flex items-baseline justify-between gap-4">
-                      <div>
-                        <div className="text-foreground font-extrabold tracking-tight">
-                          <span className="text-accent">{`//`}</span> {row.title}
-                        </div>
-                        <div className="text-sm text-muted-foreground/85">{row.desc}</div>
-                      </div>
-                      <div className="text-xs text-muted-foreground/80 tabular-nums">{String(row.target).padStart(2, "0")}%</div>
-                    </div>
-
-                    <div
-                      className="h-2.5 w-full rounded-full border border-border/60 bg-background/30 overflow-hidden"
-                      role="progressbar"
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={row.value}
-                      aria-label={row.title}
-                    >
-                      <div
-                        className="h-full rounded-full bg-accent/80 transition-[width] duration-700 ease-out"
-                        style={{ width: `${row.value}%` }}
-                      />
+            <Tooltip delayDuration={80}>
+              <TooltipTrigger asChild>
+                <div className="rounded-xl border border-border/50 bg-card/40 shadow-sm cursor-help">
+                  <div className="px-5 pt-5 pb-3 flex items-center justify-start">
+                    <div className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background/40 px-3 py-1.5 shadow-sm">
+                      <span className="text-[11px] font-mono tracking-tight text-muted-foreground/90">
+                        <span className="text-accent">{`//`}</span>
+                        <span className="ml-2">{`skills`}</span>
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+
+                  <div className="px-5 pb-5 grid gap-5">
+                    {[
+                      {
+                        key: "video",
+                        title: "Video",
+                        desc: "DaVinci Ressolve, Color grading, editing, sound design ...",
+                        value: skillProgress.video,
+                        target: 21,
+                      },
+                      {
+                        key: "modeling",
+                        title: "3D Modeling",
+                        desc: "Fusion 360, parametrické modelování, 3D tisk & prototypování, AI nástroje ...",
+                        value: skillProgress.modeling,
+                        target: 16,
+                      },
+                      {
+                        key: "coding",
+                        title: "Coding",
+                        desc: "Visual Studio, GitHub, Cursor, AI nástroje ...",
+                        value: skillProgress.coding,
+                        target: 13,
+                      },
+                    ].map((row) => (
+                      <div key={row.key} className="grid gap-2">
+                        <div className="flex items-baseline justify-between gap-4">
+                          <div>
+                            <div className="text-foreground font-extrabold tracking-tight">
+                              <span className="text-accent">{`//`}</span> {row.title}
+                            </div>
+                            <div className="text-sm text-muted-foreground/85">{row.desc}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground/80 tabular-nums">{String(row.target).padStart(2, "0")}%</div>
+                        </div>
+
+                        <div
+                          className="h-2.5 w-full rounded-full border border-border/60 bg-background/30 overflow-hidden"
+                          role="progressbar"
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={row.value}
+                          aria-label={row.title}
+                        >
+                          <div
+                            className="h-full rounded-full bg-accent/80 transition-[width] duration-700 ease-out"
+                            style={{ width: `${row.value}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent
+                side="bottom"
+                align="start"
+                sideOffset={10}
+                className="max-w-[min(420px,calc(100vw-2rem))] font-mono text-xs bg-background/70 backdrop-blur border-border/60 text-muted-foreground shadow-lg"
+              >
+                <div className="flex items-start gap-2">
+                  <span className="text-accent/90">{`//`}</span>
+                  <div className="leading-relaxed">{`work in progress...`}</div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </section>
 
@@ -502,6 +534,8 @@ const Index = () => {
 
 
       </main>
+
+      <SystemStatusLine revealDelayMs={afterIntroDelayMs + 340} />
 
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center page-reveal" style={{ ["--d" as any]: `${afterIntroDelayMs + 380}ms` }}>

@@ -12,34 +12,27 @@ type FloatingItem = {
 };
 
 const EMOJIS = [
+  // Keep to broadly supported emoji to avoid "tofu" (□) on some Windows setups.
   // tech / creative
   "💻",
-  "🧠",
   "⚙️",
-  "🧩",
   "🔧",
-  "🛰️",
   "📡",
   "🖥️",
-  "🧪",
   "📷",
   "🎥",
   "🎬",
   "🎮",
   // coffee / desk
   "☕️",
-  "🧉",
   // cars / bikes / racing
   "🚗",
   "🏎️",
-  "🛞",
   "⛽️",
   "🏁",
   "🏍️",
-  "🪖",
   // camping / nature
   "⛺️",
-  "🏕️",
   "🌲",
   "🌿",
   "🏔️",
@@ -101,8 +94,11 @@ export function FloatingEmojiBackground({ count = 10 }: { count?: number }) {
   }, [count]);
 
   const [parallax, setParallax] = React.useState({ x: 0, y: 0 });
+  const [scrollY, setScrollY] = React.useState(0);
   const rafRef = React.useRef<number | null>(null);
+  const scrollRafRef = React.useRef<number | null>(null);
   const targetRef = React.useRef({ x: 0, y: 0 });
+  const scrollTargetRef = React.useRef(0);
 
   React.useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -124,8 +120,49 @@ export function FloatingEmojiBackground({ count = 10 }: { count?: number }) {
     };
   }, []);
 
+  React.useEffect(() => {
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
+
+    const onScroll = () => {
+      scrollTargetRef.current = window.scrollY || 0;
+      if (scrollRafRef.current != null) return;
+      scrollRafRef.current = window.requestAnimationFrame(() => {
+        scrollRafRef.current = null;
+        setScrollY(scrollTargetRef.current);
+      });
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (scrollRafRef.current != null) window.cancelAnimationFrame(scrollRafRef.current);
+    };
+  }, []);
+
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+    <div
+      className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+      style={{
+        // Parallax vs foreground: move background more slowly than scroll/content.
+        transform: `translate3d(0, ${Math.round(scrollY * 0.05)}px, 0)`,
+        willChange: "transform",
+      }}
+    >
+      <div
+        className="absolute inset-0"
+        aria-hidden="true"
+        style={{
+          background:
+            // subtle green glow rising from bottom, high transparency
+            "radial-gradient(1200px 520px at 50% 110%, hsl(var(--accent) / 0.18) 0%, transparent 62%)," +
+            "linear-gradient(to top, hsl(var(--accent) / 0.10) 0%, transparent 55%)",
+        }}
+      />
       {items.map((it) => (
         (() => {
           const c = Math.cos(it.parallaxAngleRad);
